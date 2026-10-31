@@ -1,0 +1,149 @@
+--[[
+numberNetwork.lua
+
+calcula um número (w) para multiplicar x (número aleatório) para que o resultado seja xx (1)
+calculates a number (w) to multiply x (random number) so that the result is xx (1)
+
+o loop ativa através de um RemoveEvent (remote)
+the loop activates through a RemoveEvent (remote)
+
+caso queira testar, apenas comente qualquer coisa depois do fim da função none() e chame-a como quiser
+in case you want to test, just comment anything after the noone() function end and call it as you wish
+]]
+
+local remote=game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent")
+
+function sig(x)
+	return 1/(1+math.exp(-x))
+end
+
+function relu(x)
+	return math.max(0,x)
+end
+
+function tanh(x)
+	return math.tanh(x)
+end
+
+local loop=false
+
+--log pesos
+local p={}
+
+function printP()
+	print(p)
+end
+
+local n1p=0
+local n2p=1
+local n3p=0
+local n4p=0
+
+--numero aleatorio
+local x=math.random(0,1000)/1000
+
+--numero esperado
+local xx=1
+
+--peso inicial
+local w=2.7777777777777777
+
+--taxa de aprendizado
+local n=0.1
+
+--iteracao
+local i=0
+
+local nn2=1
+
+function restartData()
+	n1p=0
+	n2p=1
+	w=2.7777777777777777
+	n=0.1
+	i=0
+	x=math.random(0,1000)/1000
+	print("----------------------------------------dados recarregados----------------------------------------")
+end
+
+function none()
+
+	while x==0 or x==1 do
+		x=math.random(0,100)/100
+		task.wait()
+	end
+
+	--o resultado esperado é 1
+	local function n1()
+		return x*w
+	end
+
+	--o quao proximo o resultado é de 1
+	local function n2()
+		return (n1()-xx)^2
+	end
+
+	--quanto a perda varia (gradiente, derivada)
+	local function n3()
+		return 2*(n1()-xx)*x
+	end
+
+	--descida gradiente (w novo)
+	local function n4()
+		i+=1
+		if w>1.05 and i~=1 then
+			n=0.5/x^2
+		else
+			n=w/100
+		end
+		return w-n*n3()
+	end
+
+	--print(sig(n1())*100)
+
+	n1p=n1()
+	n2p=n2()
+	local n3p=n3()
+	local n4p=n4()
+
+	print("n random: ", x)
+	print("n esperado: ", xx)
+	print("n calculado: ", n1p)
+	print("o quao proximo é de 1: ", n2p)
+	print("peso inicial: ", w)
+	print("peso novo: ", n4p)
+	print("peso esperado: ", xx/x)
+	print("taxa de aprendizado: ", n)
+	print("n iteração: ", i)
+	print("n3: ", n3p, "\n")
+	p[i]=n1p
+	w=n4p
+	nn2=n2p
+end
+
+remote.OnServerEvent:Connect(function(plr,btn)
+	if btn==1 then
+		none()
+	elseif btn==2 then
+		printP()
+	elseif btn==3 then
+		local nnn2=1
+		loop=true
+		while n2p>0.00001 and loop==true do
+			none()
+			nnn2=nn2
+			task.wait()
+		end
+		while task.wait() do
+			if n2p<0.00001 or loop==false then
+				restartData()
+				break
+			end
+		end
+	elseif btn==4 then
+		loop=false
+	elseif btn==6 then
+		restartData()
+	end
+end)
+print("\n----------------------------------------aiScript pronto----------------------------------------\n")
